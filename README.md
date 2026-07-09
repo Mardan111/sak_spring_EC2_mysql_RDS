@@ -1,67 +1,150 @@
-# 🚀 Spring Boot Application Deployment using Jenkins, AWS EC2 & MySQL RDS
+# 🚀 Spring Boot Application Deployment using Jenkins, AWS EC2 & MySQL Server (Private Subnet)
 
 ## 📌 Project Overview
 
-This project demonstrates a complete **CI/CD pipeline** for deploying a **Spring Boot application** on **AWS EC2** with **Amazon RDS MySQL** as the backend database. The deployment process is fully automated using **Jenkins**, enabling continuous integration and continuous deployment.
+This project demonstrates the deployment of a **Spring Boot application** using a complete **CI/CD pipeline** powered by **Jenkins** on **AWS**.
 
-The objective of this project is to showcase modern DevOps practices including infrastructure provisioning, application deployment, database integration, and automated build pipelines.
+The application is deployed on an **Amazon EC2 instance** and securely communicates with a **MySQL Server hosted on a separate EC2 instance inside a Private Subnet** within an AWS VPC. The deployment follows cloud infrastructure best practices by isolating the database from public internet access.
 
----
-
-## 🏗️ Architecture
-
-```
-                 Developer
-                      │
-                      ▼
-                GitHub Repository
-                      │
-          Webhook / Poll SCM Trigger
-                      │
-                      ▼
-                  Jenkins Server
-          (Build • Test • Package)
-                      │
-             Maven Build (JAR)
-                      │
-                      ▼
-             Deploy to AWS EC2
-                      │
-          Spring Boot Application
-                      │
-                      ▼
-             Amazon RDS (MySQL)
-```
+The project showcases end-to-end DevOps implementation, including infrastructure setup, CI/CD automation, application deployment, and secure networking.
 
 ---
 
-## 🛠️ Tech Stack
+# 🏗️ Solution Architecture
+
+```text
+                        Developer
+                            │
+                            ▼
+                     GitHub Repository
+                            │
+                     Git Push / Webhook
+                            │
+                            ▼
+                     Jenkins Server
+                  (Build • Test • Package)
+                            │
+                    Maven Build (JAR)
+                            │
+                            ▼
+                 Application EC2 Instance
+                   (Public Subnet)
+                            │
+             Private VPC Communication
+                            │
+                            ▼
+                  MySQL Server EC2
+                 (Private Subnet)
+```
+
+---
+
+# ☁️ AWS Infrastructure
+
+## AWS Services Used
+
+- Amazon EC2
+- Amazon VPC
+- Public Subnet
+- Private Subnet
+- Security Groups
+- Internet Gateway
+- Route Tables
+- Elastic IP
+- Jenkins
+- GitHub
+
+---
+
+## Infrastructure Design
+
+### Public Subnet
+
+Hosted Services:
+
+- Jenkins Server
+- Spring Boot Application
+- SSH Access
+
+Public Access:
+
+- Internet Gateway attached
+- Elastic IP assigned
+- Accessible through Security Groups
+
+---
+
+### Private Subnet
+
+Hosted Services:
+
+- MySQL Server
+
+Security:
+
+- No Public IP
+- Internet inaccessible
+- Accessible only from Application EC2 through VPC
+- Database port restricted using Security Groups
+
+---
+
+# 🔐 Network Security
+
+## Security Group Configuration
+
+### Application Server
+
+Allowed Inbound
+
+| Port | Purpose |
+|-------|----------|
+|22|SSH|
+|8080|Spring Boot Application|
+|8081|Jenkins (Optional)|
+
+Outbound
+
+- MySQL Port (3306) to Private Subnet
+
+---
+
+### MySQL Server
+
+Allowed Inbound
+
+| Port | Source |
+|-------|---------|
+|3306|Application EC2 Security Group|
+|22|Bastion Host (Optional)|
+
+No public internet access.
+
+---
+
+# 🛠️ Tech Stack
 
 | Technology | Purpose |
 |------------|----------|
-| Java 21 | Backend Development |
-| Spring Boot | REST API Framework |
-| Spring Data JPA | ORM |
-| Maven | Build Tool |
-| MySQL | Relational Database |
-| Amazon RDS | Managed Database |
-| AWS EC2 | Application Hosting |
-| Jenkins | CI/CD Automation |
-| Git | Version Control |
-| GitHub | Source Code Repository |
-| Linux (Ubuntu) | Deployment Server |
+|Java 17|Backend|
+|Spring Boot|REST API|
+|Spring Data JPA|Database Access|
+|MySQL Server|Database|
+|Apache Maven|Build Tool|
+|Jenkins|CI/CD|
+|GitHub|Source Control|
+|AWS EC2|Hosting|
+|AWS VPC|Networking|
+|Linux (Ubuntu)|Operating System|
 
 ---
 
-## 📂 Project Structure
+# 📂 Project Structure
 
-```
-sak_spring_EC2_mysql_RDS/
-│
+```text
+sak_spring_EC2_mysql/
+
 ├── src/
-│   ├── main/
-│   ├── test/
-│
 ├── .mvn/
 ├── mvnw
 ├── mvnw.cmd
@@ -75,18 +158,15 @@ sak_spring_EC2_mysql_RDS/
 
 # ⚙️ CI/CD Pipeline
 
-The Jenkins pipeline automates the following stages:
+The Jenkins pipeline automates the complete deployment lifecycle.
 
-### ✅ Stage 1: Checkout Source Code
+### Stage 1 – Source Code Checkout
 
-- Pull latest code from GitHub
-- Clean workspace
+- Pull latest source code from GitHub
 
-### ✅ Stage 2: Build
+---
 
-- Compile Java source
-- Download dependencies
-- Package application using Maven
+### Stage 2 – Build
 
 ```bash
 mvn clean package
@@ -94,9 +174,7 @@ mvn clean package
 
 ---
 
-### ✅ Stage 3: Testing
-
-Execute unit tests
+### Stage 3 – Unit Testing
 
 ```bash
 mvn test
@@ -104,112 +182,25 @@ mvn test
 
 ---
 
-### ✅ Stage 4: Deployment
+### Stage 4 – Package
 
-Deploy generated JAR file to EC2 instance
+Generate executable Spring Boot JAR.
+
+---
+
+### Stage 5 – Deploy
+
+Deploy the application to the EC2 server.
 
 ```bash
-java -jar springboot-app.jar
+java -jar target/application.jar
 ```
 
 ---
 
-### ✅ Stage 5: Verification
+### Stage 6 – Verification
 
-Verify application availability
-
-```
-http://<EC2-Public-IP>:8080
-```
-
----
-
-# ☁️ AWS Infrastructure
-
-## EC2
-
-- Ubuntu Server
-- Java 17 Installed
-- Maven Installed
-- Git Installed
-- Jenkins Agent
-- Security Group configured
-
-### Open Ports
-
-| Port | Purpose |
-|-------|----------|
-|22|SSH|
-|8080|Spring Boot|
-|8081|Jenkins (Optional)|
-|3306|MySQL (RDS)|
-
----
-
-## Amazon RDS
-
-Database Engine
-
-- MySQL
-
-Configuration
-
-- Public Access Enabled (For Demo)
-- Security Group configured
-- Database Endpoint used in Spring Boot application
-
-Example:
-
-```properties
-spring.datasource.url=jdbc:mysql://<RDS-ENDPOINT>:3306/studentdb
-spring.datasource.username=admin
-spring.datasource.password=********
-```
-
----
-
-# 🔧 Jenkins Pipeline
-
-The project includes a declarative Jenkins pipeline.
-
-Pipeline responsibilities:
-
-- Checkout source code
-- Build Maven project
-- Execute tests
-- Generate executable JAR
-- Deploy application
-- Monitor build status
-
----
-
-# 🚀 Deployment Steps
-
-## Clone Repository
-
-```bash
-git clone https://github.com/<username>/sak_spring_EC2_mysql_RDS.git
-```
-
----
-
-## Build Application
-
-```bash
-mvn clean package
-```
-
----
-
-## Run Application
-
-```bash
-java -jar target/*.jar
-```
-
----
-
-## Access Application
+Access the application:
 
 ```
 http://<EC2-PUBLIC-IP>:8080
@@ -217,13 +208,31 @@ http://<EC2-PUBLIC-IP>:8080
 
 ---
 
-# 📊 DevOps Workflow
+# 🗄️ MySQL Server Configuration
 
+Database hosted on:
+
+- EC2 Instance
+- Ubuntu Linux
+- MySQL Server
+- Private Subnet
+
+Example Spring configuration:
+
+```properties
+spring.datasource.url=jdbc:mysql://<PRIVATE-IP>:3306/studentdb
+spring.datasource.username=root
+spring.datasource.password=********
 ```
+
+The application connects to MySQL through the private IP over the AWS VPC network.
+
+---
+
+# 🚀 Deployment Workflow
+
+```text
 Developer
-    │
-    ▼
-Git Push
     │
     ▼
 GitHub
@@ -232,117 +241,130 @@ Webhook
     ▼
 Jenkins
     │
+Checkout
+    ▼
 Build
     ▼
 Test
-    │
+    ▼
 Package
     ▼
-Deploy
-    │
-EC2
+Deploy to EC2
     │
 Spring Boot
     │
-RDS MySQL
+Private VPC Network
+    ▼
+MySQL Server (Private Subnet)
 ```
 
 ---
 
-# 🔐 Security Considerations
+# 🔒 Security Best Practices
 
-- IAM controlled AWS access
-- Security Groups configured with least privilege
-- Database credentials externalized
-- Jenkins credentials stored securely
-- Git ignored sensitive files
+- Database isolated inside a Private Subnet
+- No public access to MySQL Server
+- Security Group-based communication
+- Private IP database connectivity
+- Jenkins automates deployments
+- Sensitive files excluded using `.gitignore`
+- Principle of least privilege applied to Security Groups
+
+---
+
+# 📊 DevOps Practices Implemented
+
+- Continuous Integration
+- Continuous Deployment
+- Infrastructure Segmentation
+- Secure VPC Networking
+- Automated Build Pipeline
+- Version Control
+- Linux Server Administration
+- Spring Boot Deployment
+- MySQL Administration
+- Secure Database Communication
 
 ---
 
 # 📸 Project Screenshots
 
-Recommended screenshots to include:
+Include screenshots for:
 
 - GitHub Repository
 - Jenkins Dashboard
-- Jenkins Pipeline
-- Successful Build Console
-- AWS EC2 Instance
-- Amazon RDS Dashboard
+- Successful Jenkins Pipeline
+- AWS VPC
+- Public & Private Subnets
+- EC2 Instances
+- Security Groups
+- MySQL Server
 - Running Spring Boot Application
-- Application Home Page
 
-Example:
+Example directory:
 
-```
+```text
 images/
+├── architecture.png
 ├── github.png
 ├── jenkins-dashboard.png
-├── pipeline.png
-├── ec2.png
-├── rds.png
-└── application.png
+├── pipeline-success.png
+├── vpc.png
+├── public-subnet.png
+├── private-subnet.png
+├── ec2-app.png
+├── mysql-server.png
+└── application-home.png
 ```
 
 ---
 
-# 🎯 Features
+# 🎯 Key Features
 
-- CI/CD Pipeline
-- Automated Deployment
-- Spring Boot REST API
-- AWS EC2 Hosting
-- Amazon RDS Integration
-- Jenkins Automation
-- Maven Build
-- GitHub Version Control
-- Production-style Deployment
+- CI/CD using Jenkins
+- Spring Boot Application Deployment
+- MySQL Server on EC2
+- Secure VPC Architecture
+- Public & Private Subnet Design
+- Automated Maven Build
+- GitHub Integration
+- Linux Server Deployment
+- Private Database Communication
+- Production-Oriented AWS Architecture
 
 ---
 
-# 💡 Future Enhancements
+# 🚀 Future Enhancements
 
-- Docker Containerization
-- Kubernetes Deployment (EKS)
-- Terraform Infrastructure as Code
-- Ansible Configuration Management
-- SonarQube Code Quality
+- Dockerize the Application
+- Deploy using Kubernetes (Amazon EKS)
+- Infrastructure as Code using Terraform
+- Configuration Management with Ansible
+- SonarQube Integration
 - Nexus Artifact Repository
-- Prometheus Monitoring
-- Grafana Dashboard
-- AWS Load Balancer
-- Auto Scaling Group
-- SSL using Nginx & Let's Encrypt
+- NGINX Reverse Proxy
+- HTTPS using Let's Encrypt
+- CloudWatch Monitoring
+- Prometheus & Grafana
+- AWS Auto Scaling
+- Application Load Balancer (ALB)
 
 ---
 
-# 🏆 DevOps Skills Demonstrated
+# 💼 Skills Demonstrated
 
-- Continuous Integration
-- Continuous Deployment
-- Jenkins Pipeline Development
 - AWS EC2 Administration
-- Amazon RDS Configuration
-- Linux Server Administration
+- AWS VPC Design
+- Public & Private Subnet Configuration
+- Security Group Management
+- Linux Administration
+- Jenkins CI/CD Pipeline Development
+- Spring Boot Deployment
 - Maven Build Automation
 - Git & GitHub Workflow
-- Spring Boot Deployment
-- Database Connectivity
-- Infrastructure Troubleshooting
-- Application Monitoring
-
----
-
-# 📈 Learning Outcomes
-
-This project demonstrates practical experience in:
-
-- Building enterprise CI/CD pipelines
-- Deploying Java applications to AWS
-- Configuring managed databases
-- Automating software delivery
-- Managing Linux servers
-- Production deployment best practices
+- MySQL Server Administration
+- Secure Application Architecture
+- Production Deployment Strategy
 
 ---
 
@@ -350,7 +372,7 @@ This project demonstrates practical experience in:
 
 **Mardan**
 
-DevOps Engineer | AWS | Jenkins | Docker | Kubernetes | Terraform | Linux | CI/CD | Spring Boot
+**DevOps Engineer | AWS | Jenkins | Docker | Kubernetes | Terraform | Linux | CI/CD | Spring Boot**
 
 ---
 
